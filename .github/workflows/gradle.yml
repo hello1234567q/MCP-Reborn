@@ -1,20 +1,23 @@
-name: Java CI
+name: Minecraft Decompiler
 
-on: [push]
+on: [push, workflow_dispatch]
 
 jobs:
-  build:
-
+  extract:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up JDK 21
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: 21
-    - name: Setup
-      run: chmod +x gradlew && ./gradlew setup
-    - name: Build with Gradle
-      run: chmod +x gradlew && ./gradlew build
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup MCP
+        run: |
+          chmod +x gradlew
+          ./gradlew setup --no-daemon
+      - name: Upload Source
+        uses: actions/upload-artifact@v4
+        with:
+          name: MC-Source-1.21
+          path: build/mcp/src/main/java/net/minecraft
