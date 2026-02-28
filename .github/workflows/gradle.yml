@@ -1,23 +1,47 @@
-name: Minecraft Decompiler
+name: Minecraft Source Finder
 
 on: [push, workflow_dispatch]
 
 jobs:
-  extract:
+  locate-and-extract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
           distribution: 'temurin'
-      - name: Setup MCP
+          java-version: '21'
+
+      - name: Run Decompile
         run: |
           chmod +x gradlew
           ./gradlew setup --no-daemon
-      - name: Upload Source
+
+      - name: Find the Source (The Magic Step)
+        # Lệnh này sẽ in ra mọi thư mục tên là 'minecraft' để bạn biết đường dẫn thật
+        run: |
+          echo "--- Đang tìm vị trí mã nguồn ---"
+          find . -type d -name "minecraft"
+          echo "-------------------------------"
+
+      - name: Copy and Pack
+        # Chúng ta dùng lệnh tìm kiếm để tự động copy đúng chỗ
+        run: |
+          mkdir -p final_output
+          SOURCE_PATH=$(find . -type d -path "*/src/main/java/net/minecraft" | head -n 1)
+          if [ -z "$SOURCE_PATH" ]; then
+            echo "Vẫn không thấy folder src, thử tìm mọi file .java"
+            find . -name "XoroshiroRandomSource.java"
+          else
+            echo "Đã thấy tại: $SOURCE_PATH"
+            cp -r "$SOURCE_PATH" final_output/
+          fi
+
+      - name: Upload Everything
         uses: actions/upload-artifact@v4
         with:
-          name: MC-Source-1.21
-          path: build/mcp/src/main/java/net/minecraft
+          name: Minecraft-Detected-Source
+          path: final_output/
